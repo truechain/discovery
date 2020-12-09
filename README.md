@@ -1,2 +1,2 @@
 # Discovery
-Go implementation of next generation TrueChain.
+Go implementation of TrueChain 2.0.
