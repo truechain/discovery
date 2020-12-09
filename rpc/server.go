@@ -25,7 +25,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"gopkg.in/fatih/set.v0"
+	mapset "github.com/deckarep/golang-set"
 	"truechain/discovery/log"
 )
 
@@ -46,7 +46,7 @@ const (
 func NewServer() *Server {
 	server := &Server{
 		services: make(serviceRegistry),
-		codecs:   set.New(),
+		codecs:   mapset.NewSet(),
 		run:      1,
 	}
 

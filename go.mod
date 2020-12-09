@@ -43,12 +43,12 @@ require (
 	github.com/rs/cors v1.7.0
 	github.com/stretchr/testify v1.6.1
 	github.com/syndtr/goleveldb v1.0.0
-	github.com/tendermint/go-amino v0.16.0
+	github.com/tendermint/go-amino v0.12.0
 	golang.org/x/crypto v0.0.0-20201208171446-5f87f3452ae9
 	golang.org/x/net v0.0.0-20201207224615-747e23833adb
 	golang.org/x/sys v0.0.0-20201207223542-d4d67f95c62d
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
-	gopkg.in/fatih/set.v0 v0.2.1
+	gopkg.in/fatih/set.v0 v0.1.0
 	gopkg.in/karalabe/cookiejar.v2 v2.0.0-20150724131613-8dcd6a7f4951
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
 	gopkg.in/olebedev/go-duktape.v3 v3.0.0-20200619000410-60c24ae608a6

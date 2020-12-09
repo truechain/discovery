@@ -18,12 +18,12 @@ package rpc
 
 import (
 	"fmt"
+	mapset "github.com/deckarep/golang-set"
 	"math"
 	"reflect"
 	"strings"
 	"sync"
 
-	"gopkg.in/fatih/set.v0"
 	"math/big"
 	"truechain/discovery/common/hexutil"
 )
@@ -74,7 +74,7 @@ type Server struct {
 
 	run      int32
 	codecsMu sync.Mutex
-	codecs   *set.Set
+	codecs   mapset.Set
 }
 
 // rpcRequest represents a raw incoming RPC request

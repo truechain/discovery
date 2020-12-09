@@ -15,7 +15,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/agl/ed25519/edwards25519"
+	"truechain/discovery/consensus/tbft/crypto/agl/ed25519/edwards25519"
 )
 
 type zeroReader struct{}
