@@ -37,6 +37,8 @@ type Config struct {
 	EWASMInterpreter string // External EWASM interpreter options
 	EVMInterpreter   string // External EVM interpreter options
 
+	Parallel bool
+
 	ExtraEips []int // Additional EIPS that are to be enabled
 }
 

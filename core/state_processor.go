@@ -17,11 +17,11 @@
 package core
 
 import (
+	"truechain/discovery/core/parallel"
 	//"truechain/discovery/common"
+	"math"
 	"truechain/discovery/crypto"
 	"truechain/discovery/metrics"
-	"math"
-	"time"
 
 	//"truechain/discovery/log"
 	"truechain/discovery/consensus"
@@ -70,26 +70,20 @@ func (fp *StateProcessor) Process(block *types.Block, statedb *state.StateDB,
 		feeAmount = big.NewInt(0)
 		header    = block.Header()
 	)
-	start := time.Now()
-	// Iterate over and process the individual transactions
-	for i, tx := range block.Transactions() {
-		statedb.Prepare(tx.Hash(), block.Hash(), i)
-		receipt, err := ApplyTransaction(fp.config, fp.bc, gp, statedb, header, tx, usedGas, feeAmount, cfg)
-		if err != nil {
-			return nil, nil, 0, nil, err
-		}
-		receipts = append(receipts, receipt)
-		allLogs = append(allLogs, receipt.Logs...)
+
+	parallelBlock := parallel.NewParallelBlock(block, statedb, fp.config, fp.bc, cfg)
+	receipts, allLogs, usedGas, err := parallelBlock.Process()
+	if err != nil {
+		return nil, nil, 0, nil, err
 	}
-	t1 := time.Now()
+
 	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
 	_, infos, err := fp.engine.Finalize(fp.bc, header, statedb, block.Transactions(), receipts, feeAmount)
 	if err != nil {
 		return nil, nil, 0, nil, err
 	}
-	blockExecutionTxTimer.Update(t1.Sub(start))
-	blockFinalizeTimer.Update(time.Since(t1))
-	return receipts, allLogs, *usedGas, infos, nil
+
+	return receipts, allLogs, usedGas, infos, nil
 }
 
 // ApplyTransaction attempts to apply a transaction to the given state database

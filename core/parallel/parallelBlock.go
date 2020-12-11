@@ -2,9 +2,14 @@ package parallel
 
 import (
 	"container/list"
+	"math/big"
+	"sync"
 	"truechain/discovery/common"
+	"truechain/discovery/core"
 	"truechain/discovery/core/state"
 	"truechain/discovery/core/types"
+	"truechain/discovery/core/vm"
+	"truechain/discovery/params"
 )
 
 type ParallelBlock struct {
