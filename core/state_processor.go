@@ -67,12 +67,8 @@ func NewStateProcessor(config *params.ChainConfig, bc *BlockChain, engine consen
 func (fp *StateProcessor) Process(block *types.Block, statedb *state.StateDB,
 	cfg vm.Config) (types.Receipts, []*types.Log, uint64, *types.ChainReward, error) {
 	var (
-		receipts  types.Receipts
-		usedGas   = new(uint64)
 		feeAmount = big.NewInt(0)
 		header    = block.Header()
-		allLogs   []*types.Log
-		gp        = new(GasPool).AddGas(block.GasLimit())
 	)
 	start := time.Now()
 	// Iterate over and process the individual transactions
@@ -123,7 +119,10 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, gp *GasPool,
 	// Update the state with pending changes
 	var root []byte
 
-	statedb.Finalise(true)
+	// In parallel mode, Finalize() will be called after all transactions are executed
+	if !cfg.Parallel {
+		statedb.Finalise(true)
+	}
 
 	*usedGas += result.UsedGas
 	gasFee := new(big.Int).Mul(new(big.Int).SetUint64(result.UsedGas), msg.GasPrice())
