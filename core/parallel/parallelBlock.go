@@ -301,7 +301,6 @@ func (pb *ParallelBlock) executeGroup(group *ExecutionGroup, wg sync.WaitGroup) 
 		statedb.Prepare(tx.Hash(), pb.block.Hash(), ti)
 		receipt, err := core.ApplyTransaction(pb.config, pb.context, gp, statedb, pb.block.Header(), tx, usedGas, feeAmount, pb.vmConfig)
 		trxUsedGas := receipt.GasUsed
-		group.result.usedGas = *usedGas
 		if err != nil {
 			group.result.err = err
 			group.result.trxIndexToResult[ti] = NewTrxResult(nil, nil, statedb.GetTouchedAddress(), trxUsedGas)
