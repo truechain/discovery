@@ -47,6 +47,7 @@ require (
 	golang.org/x/crypto v0.0.0-20201208171446-5f87f3452ae9
 	golang.org/x/net v0.0.0-20201207224615-747e23833adb
 	golang.org/x/sys v0.0.0-20201207223542-d4d67f95c62d
+	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/fatih/set.v0 v0.1.0
 	gopkg.in/karalabe/cookiejar.v2 v2.0.0-20150724131613-8dcd6a7f4951

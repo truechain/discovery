@@ -2,6 +2,7 @@ package parallel
 
 import (
 	"truechain/discovery/common"
+	"truechain/discovery/core/state"
 	"truechain/discovery/core/types"
 )
 
