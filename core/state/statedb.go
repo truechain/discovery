@@ -92,8 +92,9 @@ type StateDB struct {
 	preimages      map[common.Hash][]byte
 	balancesChange map[common.Address]*types.BalanceInfo
 
-	// Journal of state modifications. This is the backbone of
-	// Snapshot and RevertToSnapshot.
+	// Journal of state modifications for each transaction. This is the backbone of
+	// Snapshot, RevertToSnapshot and RevertTx
+	journals       map[common.Hash]*journal
 	journal        *journal
 	validRevisions []revision
 	nextRevisionId int
@@ -121,7 +122,7 @@ func New(root common.Hash, db Database) (*StateDB, error) {
 		logs:              make(map[common.Hash][]*types.Log),
 		preimages:         make(map[common.Hash][]byte),
 		balancesChange:    make(map[common.Address]*types.BalanceInfo),
-		journal:           newJournal(),
+		journals:          make(map[common.Hash]*journal),
 		lastAccountRec:    make(map[common.Address]*Account),
 		currAccountRec:    make(map[common.Address]*Account),
 		lastStorageRec:    make(map[parallel.StorageAddress]common.Hash),
@@ -690,15 +691,9 @@ func (self *StateDB) RevertToSnapshot(revid int) {
 	self.validRevisions = self.validRevisions[:idx]
 }
 
-func (self *StateDB) RevertTrxResultByIndex(trxIndex int) {
-	self.journal.revertTrxByIndex(self, trxIndex)
-}
-
-// Revert transaction results between  index from start(include) to end(exclude)
-func (self *StateDB) RevertTrxResultsBetween(start int, end int) {
-	for index := end - 1; index >= start; index-- {
-		self.journal.revertTrxByIndex(self, index)
-	}
+func (self *StateDB) RevertTrxResultByHash(txHash common.Hash) {
+	self.journals[txHash].revert(self, 0)
+	delete(self.journals, txHash)
 }
 
 // GetRefund returns the current value of the refund counter.
@@ -746,6 +741,9 @@ func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 	}
 
 	// Invalidate journal because reverting across transactions is not allowed.
+	//s.clearJournalAndRefund()
+	s.validRevisions = s.validRevisions[:0]
+	s.refund = 0
 }
 
 // IntermediateRoot computes the current root hash of the state trie.
@@ -764,11 +762,13 @@ func (self *StateDB) Prepare(thash, bhash common.Hash, ti int) {
 	self.bhash = bhash
 	self.txIndex = ti
 	self.prepareAccountAndStorageRecords()
-	self.journal.SetTxIndex(ti)
+	self.journal = newJournal()
+	self.journals[thash] = self.journal
 	self.touchedAddress = parallel.NewTouchedAddressObject()
 }
 
 func (s *StateDB) clearJournalAndRefund() {
+	s.journals = make(map[common.Hash]*journal)
 	s.journal = newJournal()
 	s.validRevisions = s.validRevisions[:0]
 	s.refund = 0
@@ -837,14 +837,17 @@ func (s *StateDB) appendReadAccount(addr common.Address, account *Account) {
 
 func (s *StateDB) appendWriteAccount(addr common.Address, currRec *Account) {
 	if lastRec, exist := s.lastAccountRec[addr]; !exist {
-		panic(fmt.Errorf("lastAccountRec should be exist for address %x", addr))
+		panic(fmt.Errorf("lastAccountRec should exist for address %x", addr))
 	} else {
-		if !Compare(lastRec, currRec) {
+		if currRec == nil {
+			s.currAccountRec[addr] = nil
+		} else {
 			account2 := *currRec
 			s.currAccountRec[addr] = &account2
+		}
+		if !Compare(lastRec, currRec) {
 			s.touchedAddress.SetAccountOp(addr, true)
 		} else {
-			delete(s.currAccountRec, addr)
 			s.touchedAddress.SetAccountOp(addr, false)
 		}
 	}
@@ -866,11 +869,10 @@ func (s *StateDB) appendWriteStorage(addr common.Address, key common.Hash, val c
 	if lastRec, exist := s.lastStorageRec[storageAddr]; !exist {
 		panic(fmt.Errorf("lastStorageRec should be exist for address %x and key %x", addr, key))
 	} else {
+		s.currStorageRec[storageAddr] = val
 		if lastRec != val {
-			s.currStorageRec[storageAddr] = val
 			s.touchedAddress.SetStorageOp(storageAddr, true)
 		} else {
-			delete(s.currStorageRec, storageAddr)
 			s.touchedAddress.SetStorageOp(storageAddr, false)
 		}
 	}
@@ -894,4 +896,42 @@ func (s *StateDB) prepareAccountAndStorageRecords() {
 
 func (s *StateDB) GetTouchedAddress() *parallel.TouchedAddressObject {
 	return s.touchedAddress
+}
+
+func (self *StateDB) CopyStateObjFromOtherDB(other *StateDB, stateObjAddrs []*parallel.StateObjectToReuse) {
+	for _, stateObjAddr := range stateObjAddrs {
+		addr := stateObjAddr.Address
+		obj0 := self.getStateObject(addr)
+		obj1 := other.getStateObject(addr)
+
+		if obj0 != nil {
+			if obj1 == nil {
+				self.Suicide(addr)
+			} else {
+				if stateObjAddr.ReuseData {
+					obj0.data = obj1.data
+				}
+				for _, key := range stateObjAddr.Keys {
+					obj0.setState(key, obj1.GetState(other.db, key))
+				}
+			}
+		} else {
+			if obj1 != nil {
+				if stateObjAddr.ReuseData || len(stateObjAddr.Keys) != 0 {
+					obj0 = newObject(self, addr, Account{})
+
+					if stateObjAddr.ReuseData {
+						obj0.data = obj1.data
+					}
+					for _, key := range stateObjAddr.Keys {
+						obj0.setState(key, obj1.GetState(other.db, key))
+					}
+				}
+			}
+		}
+	}
+}
+
+func (self *StateDB) CopyTxJournalFromOtherDB(other *StateDB, txHash common.Hash) {
+	self.journals[txHash] = other.journals[txHash]
 }

@@ -113,10 +113,7 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, gp *GasPool,
 	// Update the state with pending changes
 	var root []byte
 
-	// In parallel mode, Finalize() will be called after all transactions are executed
-	if !cfg.Parallel {
-		statedb.Finalise(true)
-	}
+	statedb.Finalise(true)
 
 	*usedGas += result.UsedGas
 	gasFee := new(big.Int).Mul(new(big.Int).SetUint64(result.UsedGas), msg.GasPrice())
