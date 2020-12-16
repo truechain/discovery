@@ -23,7 +23,6 @@ import (
 	"math/big"
 	"sort"
 	"sync"
-	"truechain/discovery/core/parallel"
 
 	"truechain/discovery/common"
 	"truechain/discovery/core/types"

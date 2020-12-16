@@ -17,7 +17,6 @@
 package core
 
 import (
-	"truechain/discovery/core/parallel"
 	//"truechain/discovery/common"
 	"math"
 	"truechain/discovery/crypto"
