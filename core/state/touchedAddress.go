@@ -1,4 +1,4 @@
-package parallel
+package state
 
 import "truechain/discovery/common"
 
@@ -12,11 +12,21 @@ type TouchedAddressObject struct {
 	storageOp map[StorageAddress]bool
 }
 
+type StateObjectToReuse struct {
+	Address   common.Address
+	Keys      []common.Hash
+	ReuseData bool
+}
+
 func NewTouchedAddressObject() *TouchedAddressObject {
 	return &TouchedAddressObject{
 		accountOp: make(map[common.Address]bool),
 		storageOp: make(map[StorageAddress]bool),
 	}
+}
+
+func NewStateObjectToReuse(address common.Address, keys []common.Hash, reuseData bool) *StateObjectToReuse {
+	return &StateObjectToReuse{Address: address, Keys: keys, ReuseData: reuseData}
 }
 
 func (self *TouchedAddressObject) AccountOp() map[common.Address]bool {
@@ -73,4 +83,8 @@ func (self *TouchedAddressObject) Merge(another *TouchedAddressObject) bool {
 	}
 
 	return changed
+}
+
+func (self *TouchedAddressObject) RemoveAccount(address common.Address) {
+	delete(self.accountOp, address)
 }
