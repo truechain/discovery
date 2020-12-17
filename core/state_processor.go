@@ -17,12 +17,11 @@
 package core
 
 import (
-	//"truechain/discovery/common"
 	"math"
 	"truechain/discovery/crypto"
+	"truechain/discovery/log"
 	"truechain/discovery/metrics"
 
-	//"truechain/discovery/log"
 	"truechain/discovery/consensus"
 	"truechain/discovery/core/state"
 	"truechain/discovery/core/types"
@@ -56,22 +55,23 @@ func NewStateProcessor(config *params.ChainConfig, bc *BlockChain, engine consen
 	}
 }
 
-// Process processes the state changes according to the Ethereum rules by running
-// the transaction messages using the statedb and applying any rewards to both
-// the processor (coinbase) and any included uncles.
-//
 // Process returns the receipts and logs accumulated during the process and
 // returns the amount of gas that was used in the process. If any of the
 // transactions failed to execute due to insufficient gas it will return an error.
 func (fp *StateProcessor) Process(block *types.Block, statedb *state.StateDB,
 	cfg vm.Config) (types.Receipts, []*types.Log, uint64, *types.ChainReward, error) {
-	if false {
+
+	if block.Transactions().Len() != 0 {
+		log.Info("Process:", "block ", block.Number(), "txs count", block.Transactions().Len())
+	}
+
+	if true {
 		var (
 			feeAmount = big.NewInt(0)
 			header    = block.Header()
 		)
 
-		parallelBlock := NewParallelBlock(block, statedb, fp.config, fp.bc, cfg)
+		parallelBlock := NewParallelBlock(block, statedb, fp.config, fp.bc, cfg, feeAmount)
 		receipts, allLogs, usedGas, err := parallelBlock.Process()
 		if err != nil {
 			return nil, nil, 0, nil, err
@@ -104,6 +104,7 @@ func (fp *StateProcessor) Process(block *types.Block, statedb *state.StateDB,
 			receipts = append(receipts, receipt)
 			allLogs = append(allLogs, receipt.Logs...)
 		}
+
 		// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
 		_, infos, err := fp.engine.Finalize(fp.bc, header, statedb, block.Transactions(), receipts, feeAmount)
 		if err != nil {
