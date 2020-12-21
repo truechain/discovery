@@ -80,6 +80,8 @@ func (fp *StateProcessor) Process(block *types.Block, statedb *state.StateDB,
 			return nil, nil, 0, nil, err
 		}
 
+		d0 := time.Since(t0)
+		t0 = time.Now()
 		// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
 		_, infos, err := fp.engine.Finalize(fp.bc, header, statedb, block.Transactions(), receipts, feeAmount)
 		if err != nil {
@@ -114,6 +116,11 @@ func (fp *StateProcessor) Process(block *types.Block, statedb *state.StateDB,
 			allLogs = append(allLogs, receipt.Logs...)
 		}
 
+		//if block.Number().Cmp(number) == 0  {
+		//	fmt.Println("merkle root ( local: %x )", statedb.IntermediateRoot(true))
+		//}
+		d0 := time.Since(t0)
+		t0 = time.Now()
 		// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
 		_, infos, err := fp.engine.Finalize(fp.bc, header, statedb, block.Transactions(), receipts, feeAmount)
 		if err != nil {
