@@ -9,7 +9,6 @@ import (
 	"truechain/discovery/core/state"
 	"truechain/discovery/core/types"
 	"truechain/discovery/core/vm"
-	"truechain/discovery/crypto"
 	"truechain/discovery/params"
 )
 
@@ -334,15 +333,17 @@ func (pb *ParallelBlock) executeGroup(group *ExecutionGroup, wg *sync.WaitGroup)
 		txHash := tx.Hash()
 		ti := pb.trxHashToIndexMap[txHash]
 		statedb.Prepare(txHash, pb.block.Hash(), ti)
-		receipt, err := ApplyTransaction(pb.config, pb.context, gp, statedb, pb.block.Header(), tx, &group.usedGas, feeAmount, pb.vmConfig)
+		receipt, err := ApplyTransactionMsg(pb.config, pb.context, gp, statedb, pb.block.Header(),
+			pb.trxHashToMsgMap[txHash], tx, &group.usedGas, feeAmount, pb.vmConfig)
 		trxUsedGas := receipt.GasUsed
 		if err != nil {
 			group.err = err
-			group.trxHashToResultMap[txHash] = NewTrxResult(nil, nil, statedb.GetTouchedAddress(), trxUsedGas, feeAmount)
+			group.errTxIndex = ti
+			group.trxHashToResultMap[txHash] = NewTrxResult(nil, statedb.FinalizeTouchedAddress(), trxUsedGas, feeAmount)
 			group.startTrxIndex = -1
 			return
 		}
-		group.trxHashToResultMap[txHash] = NewTrxResult(receipt, receipt.Logs, statedb.GetTouchedAddress(), trxUsedGas, feeAmount)
+		group.trxHashToResultMap[txHash] = NewTrxResult(receipt, statedb.FinalizeTouchedAddress(), trxUsedGas, feeAmount)
 	}
 
 	group.feeAmount.Add(feeAmount, group.feeAmount)
