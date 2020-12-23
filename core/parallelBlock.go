@@ -540,7 +540,7 @@ func (pb *ParallelBlock) executeGroup(group *ExecutionGroup, wg *sync.WaitGroup)
 		ti := pb.trxHashToIndexMap[txHash]
 		statedb.Prepare(txHash, pb.block.Hash(), ti)
 		receipt, err := ApplyTransactionMsg(pb.config, pb.context, gp, statedb, pb.block.Header(),
-			pb.trxHashToMsgMap[txHash], tx, &group.usedGas, feeAmount, pb.vmConfig)
+			txInfo.msg, txInfo.tx, &group.usedGas, feeAmount, pb.vmConfig)
 		trxUsedGas := receipt.GasUsed
 		if err != nil {
 			group.err = err
