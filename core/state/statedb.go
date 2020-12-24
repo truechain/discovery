@@ -922,7 +922,7 @@ func (self *StateDB) CopyStateObjFromOtherDB(other *StateDB, stateObjAddrs map[c
 		obj1 := other.getStateObject(addr)
 
 		if obj1.deleted == true {
-			obj0 = self.getStateObjectWithoutSet(addr)
+			obj0 = self.getStateObject(addr)
 			if obj0 != nil {
 				obj0.deleted = true
 			}
