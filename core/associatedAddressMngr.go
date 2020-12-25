@@ -2,7 +2,6 @@ package core
 
 import (
 	lru "github.com/hashicorp/golang-lru"
-	"google.golang.org/genproto/googleapis/spanner/admin/database/v1"
 	"truechain/discovery/common"
 	"truechain/discovery/core/state"
 )
