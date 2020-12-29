@@ -926,13 +926,7 @@ func (self *StateDB) CopyStateObjFromOtherDB(other *StateDB, stateObjAddrs map[c
 				self.setStateObject(obj1)
 			}
 		} else {
-			obj0 = newObject(self, addr, obj1.data)
-			obj0.dirtyStorage = obj1.dirtyStorage
-			if obj1.dirtyCode {
-				obj0.setCode(common.BytesToHash(obj1.data.CodeHash), obj1.code)
-			}
-
-			obj0.updateRoot(self.db)
+			log.Info("Unexpected nil object in CopyStateObjFromOtherDB", "addr", addr.String())
 		}
 	}
 }
