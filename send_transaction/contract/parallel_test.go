@@ -3,20 +3,20 @@ package main
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/truechain/truechain-engineering-code/consensus/minerva"
-	"github.com/truechain/truechain-engineering-code/core/types"
-	"github.com/truechain/truechain-engineering-code/etruedb"
 	"math/big"
 	"os"
 	"testing"
+	"truechain/discovery/common"
+	"truechain/discovery/common/hexutil"
+	"truechain/discovery/consensus/minerva"
+	"truechain/discovery/core/types"
+	"truechain/discovery/crypto"
+	"truechain/discovery/etruedb"
+	"truechain/discovery/log"
 
-	"github.com/truechain/truechain-engineering-code/core"
-	"github.com/truechain/truechain-engineering-code/core/vm"
-	"github.com/truechain/truechain-engineering-code/params"
+	"truechain/discovery/core"
+	"truechain/discovery/core/vm"
+	"truechain/discovery/params"
 )
 
 func init() {
