@@ -3,6 +3,7 @@ module truechain/discovery
 go 1.14
 
 require (
+	github.com/Azure/azure-pipeline-go v0.2.2 // indirect
 	github.com/Azure/azure-storage-blob-go v0.7.0
 	github.com/Azure/go-autorest/autorest/adal v0.9.9 // indirect
 	github.com/allegro/bigcache v1.2.1
@@ -15,12 +16,12 @@ require (
 	github.com/deckarep/golang-set v1.7.1
 	github.com/docker/docker v20.10.0+incompatible
 	github.com/elastic/gosigar v0.13.0
-	github.com/ethereum/go-ethereum v1.9.25
 	github.com/fatih/color v1.10.0
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5
 	github.com/go-stack/stack v1.8.0
 	github.com/golang/protobuf v1.4.3
 	github.com/golang/snappy v0.0.3-0.20201103224600-674baa8c7fc3
+	github.com/google/gofuzz v1.1.1-0.20200604201612-c04b05f3adfa // indirect
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/holiman/uint256 v1.1.1
 	github.com/howeyc/fsnotify v0.9.0 // indirect
@@ -45,11 +46,9 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
 	github.com/tendermint/go-amino v0.12.0
-	github.com/truechain/truechain-engineering-code v2.1.1+incompatible
 	golang.org/x/crypto v0.0.0-20201208171446-5f87f3452ae9
 	golang.org/x/net v0.0.0-20201207224615-747e23833adb
 	golang.org/x/sys v0.0.0-20201207223542-d4d67f95c62d
-	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/fatih/set.v0 v0.1.0
 	gopkg.in/karalabe/cookiejar.v2 v2.0.0-20150724131613-8dcd6a7f4951

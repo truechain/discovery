@@ -11,10 +11,10 @@ fi
 workspace="$PWD/build/_workspace"
 root="$PWD"
 ethdir="$workspace/src/github.com/truechain"
-if [ ! -L "$ethdir/truechain-engineering-code" ]; then
+if [ ! -L "$ethdir/discovery" ]; then
     mkdir -p "$ethdir"
     cd "$ethdir"
-    ln -s ../../../../../. truechain-engineering-code
+    ln -s ../../../../../. discovery
     cd "$root"
 fi
 
@@ -23,8 +23,8 @@ GOPATH="$workspace"
 export GOPATH
 
 # Run the command inside the workspace.
-cd "$ethdir/truechain-engineering-code"
-PWD="$ethdir/truechain-engineering-code"
+cd "$ethdir/discovery"
+PWD="$ethdir/discovery"
 
 # Launch the arguments with the configured environment.
 exec "$@"
