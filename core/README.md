@@ -1,3 +1,3 @@
-# truechain-engineering-code
+# truechain discovery
 
 init

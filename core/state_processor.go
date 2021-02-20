@@ -18,7 +18,10 @@ package core
 
 import (
 	"math"
+	"time"
+	"truechain/discovery/common"
 	"truechain/discovery/crypto"
+	"truechain/discovery/log"
 	"truechain/discovery/metrics"
 
 	"truechain/discovery/consensus"
@@ -64,17 +67,27 @@ func (fp *StateProcessor) Process(block *types.Block, statedb *state.StateDB,
 		header    = block.Header()
 	)
 
+	start := time.Now()
+
 	parallelBlock := NewParallelBlock(block, statedb, fp.config, fp.bc, cfg, feeAmount)
 	receipts, allLogs, usedGas, err := parallelBlock.Process()
 	if err != nil {
 		return nil, nil, 0, nil, err
 	}
 
+	t1 := time.Now()
+
 	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
 	_, infos, err := fp.engine.Finalize(fp.bc, header, statedb, block.Transactions(), receipts, feeAmount, false)
 	if err != nil {
 		return nil, nil, 0, nil, err
 	}
+
+	log.Debug("Process:", "block ", block.Number().Uint64(),
+		"txs", len(block.Transactions()),
+		"applyTxs", common.PrettyDuration(t1.Sub(start)),
+		"finalize", common.PrettyDuration(time.Since(t1)),
+		"all time", common.PrettyDuration(time.Since(start)))
 
 	return receipts, allLogs, usedGas, infos, nil
 }
