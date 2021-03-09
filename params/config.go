@@ -242,14 +242,28 @@ type ChainConfig struct {
 
 	TIP3 *BlockConfig `json:"tip3"`
 
-	TIP5  *BlockConfig `json:"tip5"`
-	TIP7  *BlockConfig `json:"tip7"`
-	TIP8  *BlockConfig `json:"tip8"`
-	TIP9  *BlockConfig `json:"tip9"`
+	// TIP5 update calculate algorithm of fruit hash in blockheader
+	TIP5 *BlockConfig `json:"tip5"`
+
+	// TIP7 update consensus from pbft+fpow to dpos + fpow
+	TIP7 *BlockConfig `json:"tip7"`
+
+	// TIP8 update election algorithm from fpow to dpos
+	TIP8 *BlockConfig `json:"tip8"`
+
+	// TIP9 update the truehash dataset algorithm
+	TIP9 *BlockConfig `json:"tip9"`
+
+	// TIP10 fixed a staking calculation err.
 	TIP10 *BlockConfig `json:"tip10"`
+
+	// TIP11 is use newYoloV1InstructionSet eip-2315 in it.
 	TIP11 *BlockConfig `json:"tip11"`
 
 	TIPStake *BlockConfig `json:"tipstake"`
+
+	// truechain 2.0
+	TIP21 *BlockConfig `json:"tip12"`
 }
 
 type BlockConfig struct {
