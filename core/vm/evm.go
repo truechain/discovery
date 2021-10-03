@@ -76,7 +76,7 @@ func run(evm *EVM, contract *Contract, input []byte, readOnly bool) ([]byte, err
 
 // Context provides the EVM with auxiliary information. Once provided
 // it shouldn't be modified.
-type Context struct {
+type BlockContext struct {
 	// CanTransfer returns whether the account contains
 	// sufficient ether to transfer the value
 	CanTransfer CanTransferFunc
@@ -97,6 +97,14 @@ type Context struct {
 	Difficulty  *big.Int       // Provides information for DIFFICULTY
 }
 
+// TxContext provides the EVM with information about a transaction.
+// All fields can change between transactions.
+type TxContext struct {
+	// Message information
+	Origin   common.Address // Provides information for ORIGIN
+	GasPrice *big.Int       // Provides information for GASPRICE
+}
+
 // EVM is the Ethereum Virtual Machine base object and provides
 // the necessary tools to run a contract on the given state with
 // the provided context. It should be noted that any error
@@ -108,7 +116,8 @@ type Context struct {
 // The EVM should never be reused and is not thread safe.
 type EVM struct {
 	// Context provides auxiliary blockchain related information
-	Context
+	Context BlockContext
+	TxContext
 	// StateDB gives access to the underlying state
 	StateDB StateDB
 	// Depth is the current call stack
@@ -136,13 +145,14 @@ type EVM struct {
 
 // NewEVM returns a new EVM. The returned EVM is not thread safe and should
 // only ever be used *once*.
-func NewEVM(ctx Context, statedb StateDB, chainConfig *params.ChainConfig, vmConfig Config) *EVM {
+func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig *params.ChainConfig, vmConfig Config) *EVM {
 	evm := &EVM{
-		Context:      ctx,
+		Context:      blockCtx,
+		TxContext:    txCtx,
 		StateDB:      statedb,
 		vmConfig:     vmConfig,
 		chainConfig:  chainConfig,
-		chainRules:   chainConfig.Rules(ctx.BlockNumber),
+		chainRules:   chainConfig.Rules(blockCtx.BlockNumber),
 		interpreters: make([]Interpreter, 0, 1),
 	}
 
@@ -152,6 +162,13 @@ func NewEVM(ctx Context, statedb StateDB, chainConfig *params.ChainConfig, vmCon
 	evm.interpreter = evm.interpreters[0]
 
 	return evm
+}
+
+// Reset resets the EVM with a new transaction context.Reset
+// This is not threadsafe and should only be done very cautiously.
+func (evm *EVM) Reset(txCtx TxContext, statedb StateDB) {
+	evm.TxContext = txCtx
+	evm.StateDB = statedb
 }
 
 // Cancel cancels any running EVM operation. This may be called concurrently and
@@ -186,7 +203,7 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 	if fee != nil {
 		amount := big.NewInt(0)
 		amount = amount.Add(value, fee)
-		if value.Sign() != 0 && !evm.CanTransfer(evm.StateDB, caller.Address(), amount) {
+		if value.Sign() != 0 && !evm.Context.CanTransfer(evm.StateDB, caller.Address(), amount) {
 			return nil, gas, ErrInsufficientBalanceForAll
 		}
 	} else {
@@ -201,21 +218,21 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 		if !isPrecompile && value.Sign() == 0 {
 			// Calling a non existing account, don't do anything, but ping the tracer
 			if evm.vmConfig.Debug && evm.depth == 0 {
-				evm.vmConfig.Tracer.CaptureStart(caller.Address(), addr, false, input, gas, value)
+				evm.vmConfig.Tracer.CaptureStart(evm, caller.Address(), addr, false, input, gas, value)
 				evm.vmConfig.Tracer.CaptureEnd(ret, 0, 0, nil)
 			}
 			return nil, gas, nil
 		}
 		evm.StateDB.CreateAccount(addr)
 	}
-	evm.Transfer(evm.StateDB, caller.Address(), addr, value)
+	evm.Context.Transfer(evm.StateDB, caller.Address(), addr, value)
 	if fee != nil && fee != common.Big0 {
 		evm.StateDB.SubBalance(caller.Address(), fee)
 	}
 
 	// Capture the tracer start/end events in debug mode
 	if evm.vmConfig.Debug && evm.depth == 0 {
-		evm.vmConfig.Tracer.CaptureStart(caller.Address(), addr, false, input, gas, value)
+		evm.vmConfig.Tracer.CaptureStart(evm, caller.Address(), addr, false, input, gas, value)
 		defer func(startGas uint64, startTime time.Time) { // Lazy evaluation of the parameters
 			evm.vmConfig.Tracer.CaptureEnd(ret, startGas-gas, time.Since(startTime), err)
 		}(gas, time.Now())
@@ -410,12 +427,15 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 			return nil, common.Address{}, gas, ErrInsufficientBalanceForAll
 		}
 	} else {
-		if !evm.CanTransfer(evm.StateDB, caller.Address(), value) {
+		if !evm.Context.CanTransfer(evm.StateDB, caller.Address(), value) {
 			return nil, common.Address{}, gas, ErrInsufficientBalance
 		}
 	}
 	nonce := evm.StateDB.GetNonce(caller.Address())
 	evm.StateDB.SetNonce(caller.Address(), nonce+1)
+	// We add this to the access list _before_ taking a snapshot. Even if the creation fails,
+	// the access-list change should not be rolled back
+	evm.StateDB.AddAddressToAccessList(address)
 
 	// Ensure there's no existing contract already at the designated address
 	contractHash := evm.StateDB.GetCodeHash(address)
@@ -426,7 +446,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 	snapshot := evm.StateDB.Snapshot()
 	evm.StateDB.CreateAccount(address)
 	evm.StateDB.SetNonce(address, 1)
-	evm.Transfer(evm.StateDB, caller.Address(), address, value)
+	evm.Context.Transfer(evm.StateDB, caller.Address(), address, value)
 
 	// Initialise a new contract and set the code that is to be used by the EVM.
 	// The contract is a scoped environment for this execution context only.
@@ -438,14 +458,15 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 	}
 
 	if evm.vmConfig.Debug && evm.depth == 0 {
-		evm.vmConfig.Tracer.CaptureStart(caller.Address(), address, true, codeAndHash.code, gas, value)
+		evm.vmConfig.Tracer.CaptureStart(evm, caller.Address(), address, true, codeAndHash.code, gas, value)
 	}
 	start := time.Now()
 
 	ret, err := run(evm, contract, nil, false)
 
-	// check whether the max code size has been exceeded
-	maxCodeSizeExceeded := len(ret) > params.MaxCodeSize
+	if err == nil && len(ret) > params.MaxCodeSize {
+		err = ErrMaxCodeSizeExceeded
+	}
 	// if the contract creation ran successfully and no errors were returned
 	// calculate the gas required to store the code. If the code could not
 	// be stored due to not enough gas set an error and let it be handled
@@ -490,7 +511,7 @@ func (evm *EVM) Create(caller ContractRef, code []byte, gas uint64, value *big.I
 // instead of the usual sender-and-nonce-hash as the address where the contract is initialized at.
 func (evm *EVM) Create2(caller ContractRef, code []byte, gas uint64, endowment *big.Int, salt *uint256.Int, fee *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
 	codeAndHash := &codeAndHash{code: code}
-	contractAddr = crypto.CreateAddress2(caller.Address(), common.Hash(salt.Bytes32()), codeAndHash.Hash().Bytes())
+	contractAddr = crypto.CreateAddress2(caller.Address(), salt.Bytes32(), codeAndHash.Hash().Bytes())
 	return evm.create(caller, codeAndHash, gas, endowment, contractAddr, fee)
 }
 

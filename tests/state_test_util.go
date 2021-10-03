@@ -131,9 +131,10 @@ func (t *StateTest) Run(subtest StateSubtest, vmconfig vm.Config) (*state.StateD
 	if err != nil {
 		return nil, err
 	}
-	context := core.NewEVMContext(msg, block.Header(), nil, t.json.Env.Difficulty, &t.json.Env.Coinbase)
-	context.GetHash = vmTestBlockHash
-	evm := vm.NewEVM(context, statedb, config, vmconfig)
+	txCtx := core.NewEVMTxContext(msg)
+	blockCtx := core.NewEVMBlockContext(block.Header(), nil, t.json.Env.Difficulty, &t.json.Env.Coinbase)
+	blockCtx.GetHash = vmTestBlockHash
+	evm := vm.NewEVM(blockCtx, txCtx, statedb, config, vmconfig)
 	gaspool := new(core.GasPool)
 	gaspool.AddGas(block.GasLimit())
 	snapshot := statedb.Snapshot()
